@@ -36,3 +36,7 @@ exports.validateLogIn = (data) =>{
     }
 
 }
+
+exports.validateMeeting = (data) => {
+    
+}
