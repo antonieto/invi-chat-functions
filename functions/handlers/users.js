@@ -73,13 +73,11 @@ exports.logIn = (req, res)=>{
         email: req.body.email, 
         password: req.body.password
     } 
-    console.log(user.email, user.password);
     
     // Primero se validan los datos 
     const { errors, valid } = validateLogIn(user); 
     if(!valid) return res.status(400).json(errors); 
 
-    console.log("Here");
 
     //Login validado, proceder a autenticar 
     firebase.auth().signInWithEmailAndPassword(user.email, user.password) 

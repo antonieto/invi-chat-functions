@@ -14,7 +14,8 @@ app.post('/login', logIn);
 //TODO: app.post('/user/createEvent', fbAuth, createMeeting);
 app.post('/meeting', fbAuth, createMeeting); 
 
-// Chat routes
+// Chat routes 
+app.post('/chat:cha', chatAuth, sendChat);
 // TODO: chat message send route 
 
 exports.api = functions.https.onRequest(app);
