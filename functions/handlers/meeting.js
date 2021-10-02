@@ -6,7 +6,7 @@ const { validateSignUp, validateLogIn } = require('../util/validators');
 const firebase = require('firebase').default
 // firebase.initializeApp(config)
 
-exports.sendInvi = (req,res) => {
+exports.invite = (req,res) => {
     const newInvi = {
         from: req.user.handle, 
         to: req.body.to, 
@@ -43,7 +43,49 @@ exports.sendInvi = (req,res) => {
 
 }
 
+exports.acceptInvi = (req,res) => {
 
+    let eventId;
+
+    // Steps 
+    // Verify that req.user.handle is inside the invitation to accept
+
+    db.doc(`/invitations/${req.params.invitationId}`).get() 
+    .then(doc => {
+        if(!doc.exists){
+            return res.status(404).json({error: 'Event not found'});
+        
+        } else if( doc.data().to != req.user.handle ) { // Veryfies the user accepting the invitation is actually the one invited
+            return res.status(401).json({error: 'Unauthorized'}) 
+        
+        } else { 
+            return db.doc(`/events/${doc.data().eventId}`).get(); //All verified, adding sender to event.guests
+    
+        }
+    }) 
+    .then(doc => {
+        // Agregar req.user.handle a event 
+        const guests = doc.data().guests; 
+        guests.push(req.user.handle); 
+        // Hacer update 
+        eventId = doc.id; 
+        console.log(doc.data());
+        // return db.doc(`/events/${doc.data().eventId}`).update({guests}); 
+        return db.doc(`/events/${doc.id}`).update({guests});
+    }) 
+    .then(() => {
+        // Deleting the invitation 
+        return db.doc(`/invitations/${req.params.invitationId}`).delete()
+    })
+    .then(() => {
+        return res.status(200).json({msg: `Invitation to ${eventId} accepted`});
+    }) 
+    .catch(err => { 
+        console.error(err); 
+        return res.status(500).json({error: err.code});
+    })
+
+}
 
 exports.createMeeting = (req,res) => {
     let chatId, eventId, newChat;
