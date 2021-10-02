@@ -6,6 +6,54 @@ const { validateSignUp, validateLogIn } = require('../util/validators');
 const firebase = require('firebase').default
 // firebase.initializeApp(config)
 
+exports.sendInvi = (req,res) => {
+    const newInvi = {
+        from: req.user.handle, 
+        to: req.body.to, 
+        eventId: req.params.eventId,
+        createdAt: new Date().toISOString()
+    }
+
+    db.doc(`/events/${newInvi.eventId}`).get() 
+    .then(doc => {
+        if(doc.data().owner !== req.user.handle){
+            return res.status(401).json({error: "You do not have permission"});
+        } 
+    }) 
+    .catch(err => {
+        console.error(err); 
+        return res.status(500).json({error: err.code});
+    })
+
+    db.doc(`/users/${newInvi.to}`).get() 
+    .then(doc => {
+        if(!doc.exists){
+            return res.status(404).json({error: 'User invitated not found'});
+        } else {
+            return db.collection('/invitations').add(newInvi)
+        }
+    })
+    .then(doc => {
+        return res.status(200).json({msg: `Invitation sent to ${newInvi.to}`});
+    })  
+    .catch(err => {
+        console.error(err); 
+        return res.status(500).json({error: err.code});
+    })
+
+}
+
+exports.addGuest = (req,res) => {
+    return res.status(200).json({msg: '...'});
+    // Obtener colección x|
+     db.collection('/invitations').where('to', '==', 'test') 
+    .then(docs => {
+        docs.forEach(element => {
+            
+        });
+    })
+} 
+
 exports.createMeeting = (req,res) => {
     let chatId, eventId, newChat;
     const uData = {}
