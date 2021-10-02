@@ -43,16 +43,7 @@ exports.sendInvi = (req,res) => {
 
 }
 
-exports.addGuest = (req,res) => {
-    return res.status(200).json({msg: '...'});
-    // Obtener colección x|
-     db.collection('/invitations').where('to', '==', 'test') 
-    .then(docs => {
-        docs.forEach(element => {
-            
-        });
-    })
-} 
+
 
 exports.createMeeting = (req,res) => {
     let chatId, eventId, newChat;
