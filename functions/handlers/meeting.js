@@ -52,5 +52,9 @@ exports.createMeeting = (req,res) => {
         console.error(err)     
         return res.status(500).json({error: err.code})
     });
+}
 
-} 
+exports.addGuests=(req,res)=>{
+    db.collection()
+}
+
