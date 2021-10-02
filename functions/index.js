@@ -3,7 +3,7 @@ const functions = require("firebase-functions");
 const app = require('express')(); 
 
 const { signUp, logIn } = require('./handlers/users'); 
-const { createMeeting } = require('./handlers/meeting');
+const { createMeeting, addGuest, sendInvi } = require('./handlers/meeting');
 const { sendMessage } = require('./handlers/chat');
 const fbAuth = require('./util/FBAuth'); 
 
@@ -11,9 +11,11 @@ const fbAuth = require('./util/FBAuth');
 app.post('/signup', signUp);
 app.post('/login', logIn); 
 
-//Meetin routes
+//Meeting routes
 //TODO: app.post('/user/createEvent', fbAuth, createMeeting);
 app.post('/meeting', fbAuth, createMeeting); 
+// app.post('/meeting/addGuest/:eventId', fbAuth, addGuest); 
+app.post('/meeting/sendInvi/:eventId', fbAuth, sendInvi);
 
 // Chat routes 
 app.post('/chat/:chatId', fbAuth, sendMessage);
