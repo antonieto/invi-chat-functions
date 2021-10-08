@@ -1,7 +1,8 @@
 // Aquí deben de ir las funciones de Login y Signup 
 
 const { db, admin } = require('../util/admin'); 
-const config = require('../util/config');
+const config = require('../util/config'); 
+const cors = require('cors')({origin: true});
 
 const { validateSignUp, validateLogIn } = require('../util/validators');
 
@@ -99,4 +100,21 @@ exports.logIn = (req, res)=>{
             }
         })
 
+} 
+
+exports.getAllUsers = (req,res)=>{
+    cors(req,res, ()=> {
+        db.collection('/users').get() 
+        .then(docs=>{
+            let arr = []
+            docs.forEach(doc=>{
+                arr.push(doc.data());
+            }) 
+            return arr;
+        })
+        .then((arr)=>{ 
+            res.set({"Acces-Control-Allow-Origin": "*"});
+            return res.status(200).json({data: arr});
+        })
+    })
 }

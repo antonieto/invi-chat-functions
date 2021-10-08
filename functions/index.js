@@ -2,14 +2,15 @@ const functions = require("firebase-functions");
 
 const app = require('express')(); 
 
-const { signUp, logIn } = require('./handlers/users'); 
+const { signUp, logIn, getAllUsers } = require('./handlers/users'); 
 const { createMeeting, invite, acceptInvi } = require('./handlers/meeting');
 const { sendMessage } = require('./handlers/chat');
 const fbAuth = require('./util/FBAuth'); 
 
 // User routes 
 app.post('/signup', signUp);
-app.post('/login', logIn); 
+app.post('/login', logIn);  
+app.get('/users', getAllUsers);
 
 //Meeting routes
 app.post('/meeting', fbAuth, createMeeting); 
