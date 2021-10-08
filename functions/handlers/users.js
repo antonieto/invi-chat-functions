@@ -71,7 +71,6 @@ exports.logIn = (req, res) => {
   // Se utiliza firebase.auth, signIn with email and password
   console.log("-----");
   cors(req, res, () => {
-    res.set("Access-Control-Allow-Origin", "*");
     const user = {
       email: req.body.email,
       password: req.body.password,
@@ -89,6 +88,7 @@ exports.logIn = (req, res) => {
         return data.user.getIdToken();
       })
       .then((token) => {
+        res.set({ "Access-Control-Allow-Origin": "*" });
         return res.status(200).json({ token });
       })
       .catch((err) => {
@@ -114,7 +114,7 @@ exports.getAllUsers = (req, res) => {
         return arr;
       })
       .then((arr) => {
-        res.set({ "Acces-Control-Allow-Origin": "*" });
+        res.set({ "Access-Control-Allow-Origin": "*" });
         return res.status(200).json({ data: arr });
       });
   });
