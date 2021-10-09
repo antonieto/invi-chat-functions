@@ -69,7 +69,7 @@ exports.signUp = (req, res) => {
 
 exports.logIn = (req, res) => {
   // Se utiliza firebase.auth, signIn with email and password
-  console.log("-----");
+  let userToken, userData;
   cors(req, res, () => {
     const user = {
       email: req.body.email,
@@ -84,12 +84,22 @@ exports.logIn = (req, res) => {
       .auth()
       .signInWithEmailAndPassword(user.email, user.password)
       .then((data) => {
-        console.log("here");
         return data.user.getIdToken();
       })
       .then((token) => {
-        res.set({ "Access-Control-Allow-Origin": "*" });
-        return res.status(200).json({ token });
+        userToken = token;
+        return admin.auth().verifyIdToken(token);
+      })
+      .then((decodedToken) => {
+        return db
+          .collection("users")
+          .where("userId", "==", decodedToken.uid)
+          .limit(1)
+          .get();
+      })
+      .then((data) => {
+        userData = data.docs[0].data();
+        return res.status(200).json({ token: userToken, data: userData });
       })
       .catch((err) => {
         if (err.code === "auth/wrong-password") {
@@ -114,7 +124,6 @@ exports.getAllUsers = (req, res) => {
         return arr;
       })
       .then((arr) => {
-        res.set({ "Access-Control-Allow-Origin": "*" });
         return res.status(200).json({ data: arr });
       });
   });
