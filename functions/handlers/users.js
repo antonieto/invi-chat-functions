@@ -24,7 +24,7 @@ exports.signUp = (req, res) => {
 
   // newUser validado, procediendo
 
-  let token, userId;
+  let token, userId, userCredentials;
   db.doc(`/users/${newUser.handle}`)
     .get() //Esta linea "obtiene" el documento con esa ubicacion.
     .then((doc) => {
@@ -45,16 +45,17 @@ exports.signUp = (req, res) => {
     })
     .then((idToken) => {
       token = idToken; // Almacenamos el token
-      const userCredentials = {
+      userCredentials = {
         handle: newUser.handle,
         email: newUser.email,
         createdAt: new Date().toISOString(),
-        userId, //La clave en el documento y el valor son iguales
+        userId,
+        currentMeetings: [], //La clave en el documento y el valor son iguales
       };
       return db.doc(`/users/${newUser.handle}`).set(userCredentials);
     })
     .then(() => {
-      return res.status(200).json({ msg: "User created succesfully", token });
+      return res.status(200).json({ token, data: userCredentials });
     })
     .catch((err) => {
       if (err === "auth/user-already-in-use") {
@@ -125,6 +126,30 @@ exports.getAllUsers = (req, res) => {
       })
       .then((arr) => {
         return res.status(200).json({ data: arr });
+      });
+  });
+};
+
+// Route to get events owned by user
+
+exports.getUserMeetings = (req, res) => {
+  cors(req, res, () => {
+    db.collection("/events")
+      .where("owner", "==", req.user.handle)
+      .get()
+      .then((docs) => {
+        let arr = [];
+        docs.forEach((doc) => {
+          arr.push(doc.data());
+        });
+        return arr;
+      })
+      .then((arr) => {
+        return res.status(200).json({ data: arr });
+      })
+      .catch((err) => {
+        console.error(err);
+        return res.status(500).json({ error: err.code });
       });
   });
 };
