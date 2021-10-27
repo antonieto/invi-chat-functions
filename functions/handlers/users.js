@@ -153,3 +153,9 @@ exports.getUserMeetings = (req, res) => {
       });
   });
 };
+
+// Route to verify token
+
+exports.verifyToken = (req, res) => {
+  return res.status(200).json({ msg: "Token verified successfully" });
+};

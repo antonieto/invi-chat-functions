@@ -9,6 +9,7 @@ const {
   logIn,
   getAllUsers,
   getUserMeetings,
+  verifyToken,
 } = require("./handlers/users");
 const {
   createMeeting,
@@ -24,6 +25,7 @@ app.post("/signup", signUp);
 app.post("/login", logIn);
 app.get("/users", getAllUsers);
 app.get("/user/getMeetings", fbAuth, getUserMeetings);
+app.get("/verifyToken", fbAuth, verifyToken);
 
 //Meeting routes
 app.post("/meeting", fbAuth, createMeeting);
