@@ -14,32 +14,47 @@ exports.invite = (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
-  db.doc(`/events/${newInvi.eventId}`)
+  // Verify invitation isn't sent yet
+  var query = db.collection("/invitations");
+  query = query.where("to", "==", newInvi.to);
+  query = query.where("eventId", "==", newInvi.eventId);
+  query
     .get()
-    .then((doc) => {
-      if (doc.data().owner !== req.user.handle) {
-        return res.status(401).json({ error: "You do not have permission" });
-      }
-      if (doc.data().owner === req.body.to) {
-        return res.status(400).json({ error: "Invalid invitation" });
-      }
-    })
-    .catch((err) => {
-      console.error(err);
-      return res.status(500).json({ error: err.code });
-    });
-
-  db.doc(`/users/${newInvi.to}`)
-    .get()
-    .then((doc) => {
-      if (!doc.exists) {
-        return res.status(404).json({ error: "User invitated not found" });
+    .then((docs) => {
+      if (!docs.empty) {
+        console.log("Invitation found");
+        return res.status(403).json({ error: "Invitation already sent" });
       } else {
-        return db.collection("/invitations").add(newInvi);
+        db.doc(`/events/${newInvi.eventId}`)
+          .get()
+          .then((doc) => {
+            if (doc.data().owner !== req.user.handle) {
+              return res
+                .status(401)
+                .json({ error: "You do not have permission" });
+            } else if (doc.data().owner === req.body.to) {
+              return res.status(400).json({ error: "Invalid invitation" });
+            } else {
+              return db.doc(`/users/${newInvi.to}`).get();
+            }
+          })
+          .then((doc) => {
+            if (!doc.exists) {
+              return res.status(404).json({ error: "User not found" });
+            } else {
+              return db.collection("/invitations").add(newInvi);
+            }
+          })
+          .then((doc) => {
+            return res
+              .status(200)
+              .json({ msg: `Invitation sent to ${newInvi.to}` });
+          })
+          .catch((err) => {
+            console.error(err);
+            return res.status(500).json({ error: err.code });
+          });
       }
-    })
-    .then((doc) => {
-      return res.status(200).json({ msg: `Invitation sent to ${newInvi.to}` });
     })
     .catch((err) => {
       console.error(err);
