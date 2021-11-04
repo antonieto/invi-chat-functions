@@ -50,7 +50,6 @@ exports.signUp = (req, res) => {
         email: newUser.email,
         createdAt: new Date().toISOString(),
         userId,
-        currentMeetings: [], //La clave en el documento y el valor son iguales
       };
       return db.doc(`/users/${newUser.handle}`).set(userCredentials);
     })

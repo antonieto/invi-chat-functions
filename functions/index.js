@@ -16,6 +16,10 @@ const {
   invite,
   acceptInvi,
   getMeeting,
+  invite2,
+  deleteMeeting,
+  kickFromMeeting,
+  declineInvi,
 } = require("./handlers/meeting");
 const { sendMessage } = require("./handlers/chat");
 const fbAuth = require("./util/FBAuth");
@@ -33,6 +37,9 @@ app.get("/meeting/:meetingId", fbAuth, getMeeting);
 
 app.post("/meeting/invite/:eventId", fbAuth, invite);
 app.post("/meeting/accept/:invitationId", fbAuth, acceptInvi);
+app.delete("/meeting/delete/:meetingId", fbAuth, deleteMeeting);
+app.post("/meeting/kick/:meetingId&:userHandle", fbAuth, kickFromMeeting);
+app.delete("/meeting/decline/:invitationId", fbAuth, declineInvi);
 
 // Chat routes
 app.post("/chat/:chatId", fbAuth, sendMessage);

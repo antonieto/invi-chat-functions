@@ -1,7 +1,11 @@
 const { db, admin } = require("../util/admin");
 const config = require("../util/config");
 
-const { validateSignUp, validateLogIn } = require("../util/validators");
+const {
+  validateSignUp,
+  validateLogIn,
+  validateMeeting,
+} = require("../util/validators");
 
 const firebase = require("firebase").default;
 // firebase.initializeApp(config)
@@ -14,47 +18,54 @@ exports.invite = (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
-  // Verify invitation isn't sent yet
-  var query = db.collection("/invitations");
-  query = query.where("to", "==", newInvi.to);
-  query = query.where("eventId", "==", newInvi.eventId);
-  query
+  // First, check user isn't in meeting yet
+  db.doc(`/events/${newInvi.eventId}`)
     .get()
+    .then((doc) => {
+      const { guests } = doc.data();
+      if (guests.includes(newInvi.to)) {
+        return res.status(403).json({ error: "User is already in meeting!" });
+      } else {
+        // If user is not in meeting, check if it hasnt been invited yet
+        return db
+          .collection("/invitations")
+          .where("to", "==", newInvi.to)
+          .where("eventId", "==", newInvi.eventId)
+          .get();
+      }
+    })
     .then((docs) => {
       if (!docs.empty) {
-        console.log("Invitation found");
-        return res.status(403).json({ error: "Invitation already sent" });
+        return res
+          .status(403)
+          .json({ error: `${newInvi.to} is already invited!` });
       } else {
-        db.doc(`/events/${newInvi.eventId}`)
-          .get()
-          .then((doc) => {
-            if (doc.data().owner !== req.user.handle) {
-              return res
-                .status(401)
-                .json({ error: "You do not have permission" });
-            } else if (doc.data().owner === req.body.to) {
-              return res.status(400).json({ error: "Invalid invitation" });
-            } else {
-              return db.doc(`/users/${newInvi.to}`).get();
-            }
-          })
-          .then((doc) => {
-            if (!doc.exists) {
-              return res.status(404).json({ error: "User not found" });
-            } else {
-              return db.collection("/invitations").add(newInvi);
-            }
-          })
-          .then((doc) => {
-            return res
-              .status(200)
-              .json({ msg: `Invitation sent to ${newInvi.to}` });
-          })
-          .catch((err) => {
-            console.error(err);
-            return res.status(500).json({ error: err.code });
-          });
+        // Not invited and not in meeting, proceeding
+        // Verify that the sender is the owner of the meeting
+        return db.doc(`/events/${newInvi.eventId}`).get();
       }
+    })
+    .then((doc) => {
+      // If the sender isnt admin, return error
+      if (doc.data().owner !== newInvi.from) {
+        return res.status(401).json({ error: "You do not have permission" });
+      }
+      // If user invited himself, return error
+      else if (newInvi.from === newInvi.to) {
+        return res.status(400).json({ error: "Invalid invitation" });
+      } else {
+        return db.doc(`/users/${newInvi.to}`).get();
+      }
+    })
+    .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ error: "User not found" });
+      } else {
+        return db.collection("/invitations").add(newInvi);
+      }
+    })
+    .then(() => {
+      return res.status(200).json({ msg: `Invitation sent to ${newInvi.to}` });
     })
     .catch((err) => {
       console.error(err);
@@ -95,16 +106,31 @@ exports.acceptInvi = (req, res) => {
       db.doc(`/invitations/${req.params.invitationId}`).delete();
     })
     .then(() => {
-      // Add event to currentMeetings atribute of user
-      return db.doc(`/users/${req.user.handle}`).get();
+      return res.status(200).json({ msg: `Invitation to ${eventId} accepted` });
     })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+exports.declineInvi = (req, res) => {
+  // Verify invitation exists
+  const invi = req.params.invitationId;
+  db.doc(`/invitations/${invi}`)
+    .get()
     .then((doc) => {
-      let { currentMeetings } = doc.data();
-      currentMeetings.push(eventId);
-      return db.doc(`/users/${req.user.handle}`).update({ currentMeetings });
+      if (!doc.exists) {
+        return res.status(404).json({ error: "Invitation does not exist" });
+      } else {
+        // If invitation exists and user is the one invited, delete invitation
+        if (doc.data().to === req.user.handle) {
+          return db.doc(`/invitations/${invi}`).delete();
+        }
+      }
     })
     .then(() => {
-      return res.status(200).json({ msg: `Invitation to ${eventId} accepted` });
+      return res.status(200).json({ msg: "Invitation declined successfully" });
     })
     .catch((err) => {
       console.error(err);
@@ -121,12 +147,14 @@ exports.createMeeting = (req, res) => {
     title: req.body.title,
     owner: req.user.handle,
     description: req.body.description,
+    location: req.body.location,
     createdAt: new Date().toISOString(),
     chatId: "",
     guests: [req.user.handle],
   };
   //TODO: Validate data
-
+  const { errors, valid } = validateMeeting(meetingData);
+  if (!valid) return res.status(400).json({ errors });
   // Data validated
   db.collection("/events")
     .add(meetingData)
@@ -151,18 +179,10 @@ exports.createMeeting = (req, res) => {
           db.doc(`/events/${eventId}`).update({ chatId });
         })
         .then(() => {
-          return db.doc(`/users/${req.user.handle}`).get();
-        })
-        .then((doc) => {
-          let { currentMeetings } = doc.data();
-          currentMeetings.push(eventId);
-          return db
-            .doc(`/users/${req.user.handle}`)
-            .update({ currentMeetings });
-        })
-        .then(() => {
           return res.status(200).json({
             message: `Event ${eventId} and chat ${chatId} created succesfully`,
+            eventId,
+            chatId,
           });
         });
     })
@@ -181,5 +201,67 @@ exports.getMeeting = (req, res) => {
       } else {
         return res.status(200).json(doc.data());
       }
+    });
+};
+
+exports.deleteMeeting = (req, res) => {
+  // Delete chat first
+  db.doc(`/events/${req.params.meetingId}`)
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ error: "Meeting not found" });
+      } else if (req.user.handle !== doc.data().owner) {
+        return res.status(403).json({ error: "Forbidden request" });
+      } else {
+        return db.doc(`/chats/${doc.data().chatId}`).delete();
+      }
+    })
+    .then(() => {
+      return db.doc(`/events/${req.params.meetingId}`).delete();
+    })
+    .then(() => {
+      return res
+        .status(200)
+        .json({ msg: `Meeting ${req.params.meetingId} deleted successfully` });
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+exports.kickFromMeeting = (req, res) => {
+  let guestList;
+  const toKick = req.params.userHandle;
+  db.doc(`/events/${req.params.meetingId}`)
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ error: "Meeting not found" });
+      } else if (req.user.handle !== doc.data().owner) {
+        // Check if
+        return res.status(403).json({ error: "Forbidden request" });
+      } else {
+        // Proceed to delete
+        guestList = doc.data().guests;
+        if (guestList.includes(toKick)) {
+          guestList.splice(guestList.indexOf(toKick), 1);
+          return db
+            .doc(`/events/${req.params.meetingId}`)
+            .update({ guests: guestList });
+        } else {
+          return res.status(404).json({ error: "User is not invited yet" });
+        }
+      }
+    })
+    .then(() => {
+      return res
+        .status(200)
+        .json({ msg: `User ${toKick} kicked successfully` });
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error: err.code });
     });
 };

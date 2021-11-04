@@ -1,42 +1,52 @@
-const isEmail = (string)=> {
-    const regExp = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;  
-    
-    return string.match(regExp) 
-}
- 
-const isEmpty = (string)=> {
-    return string.trim() === ""
-}
+const isEmail = (string) => {
+  const regExp =
+    /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
-exports.validateSignUp = (data)=> { 
-    let errors = {} 
-    if (isEmpty(data.email)){ 
-        errors.email = 'Email must not be empty';
-    } else if(!isEmail(data.email)){
-        errors.email = 'Not a valid email';
-    } 
-    if (data.password !== data.confirmPassword){
-        errors.password = 'Passwords must match';
-    }
-    return { 
-        errors, 
-        valid: Object.keys(errors).length === 0 ? true : false //Si no hay errores, valid: true, else, valid: false
-    }
-} 
- 
-exports.validateLogIn = (data) =>{
-    let errors = {};
+  return string.match(regExp);
+};
 
-    if(isEmpty(data.email)) errors.email = 'Email must not be empty'
-    if(isEmpty(data.password)) errors.password = 'Password must not be empty';
+const isEmpty = (string) => {
+  return string.trim() === "";
+};
 
-    return { 
-        errors, 
-        valid: Object.keys(errors).length === 0 ? true: false
-    }
+exports.validateSignUp = (data) => {
+  let errors = {};
+  if (isEmpty(data.email)) {
+    errors.email = "Email must not be empty";
+  } else if (!isEmail(data.email)) {
+    errors.email = "Not a valid email";
+  }
+  if (data.password !== data.confirmPassword) {
+    errors.password = "Passwords must match";
+  }
+  return {
+    errors,
+    valid: Object.keys(errors).length === 0 ? true : false, //Si no hay errores, valid: true, else, valid: false
+  };
+};
 
-}
+exports.validateLogIn = (data) => {
+  let errors = {};
+
+  if (isEmpty(data.email)) errors.email = "Email must not be empty";
+  if (isEmpty(data.password)) errors.password = "Password must not be empty";
+
+  return {
+    errors,
+    valid: Object.keys(errors).length === 0 ? true : false,
+  };
+};
 
 exports.validateMeeting = (data) => {
-    
-}
+  let errors = {};
+
+  if (isEmpty(data.title)) errors.title = "Title must not be empty";
+  if (isEmpty(data.description))
+    errors.description = "Description must not be empty";
+  if (isEmpty(data.location)) errors.location = "Location must not be empty";
+
+  return {
+    errors,
+    valid: Object.keys(errors).length === 0 ? true : false,
+  };
+};
